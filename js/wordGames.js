@@ -1,24 +1,39 @@
 // Game to guess the characters in a word, will migrate to an Alexa skill
 
-var AWS = require("aws-sdk");
+let AWS = require("aws-sdk");
 AWS.config.update({ region: "us-west-2", endpoint: "http://localhost:8000" });
-var docClient = new AWS.DynamoDB.DocumentClient();
-var randomWords = require('random-words');
+let docClient = new AWS.DynamoDB.DocumentClient();
+const readline = require('readline');
+let prompt = require('prompt');
+let randomWords = require('random-words');
+let fs = require('fs');
+
 var table = "WORDLIST";
+var incorrectGuesses = 0;
+const allowedMisses = 3;
+var guesses = [];
+// const readln = readline.createInterface({
+//   input: process.stdin,
+//   output: process.stdout
+// });
 
 input = process.argv[2];
 
 var newWord = chooseWord();
 console.log(newWord);
-checkChar(input, newWord[0]);
+var matchedChars = new Array(newWord.length).fill(null);
+console.log(matchedChars);
+
+checkChar(input, newWord, matchedChars);
 
 function checkChar (input, newWord) {
-	wordLength = newWord.length;
 	i = 0;
-	while (i < wordLength) {
+	while (i < newWord.length) {
 		if (input==newWord.charAt(i)) {
 			console.log("Match! the character is in the word");
 			console.log(i+1);
+			matchedChars[i]=input;
+			console.log(matchedChars)
 			return true;
 	    }
 	    console.log("in while loop")
@@ -26,7 +41,14 @@ function checkChar (input, newWord) {
 	    i++;
 	}
 	console.log("sorry, that character is not in the word.")
-	return false;
+	incorrectGuesses++;
+	if (incorrectGuesses > allowedMisses) {
+		console.log("You have no more attempts, sorry.");
+		console.log("The word was " + newWord);
+		return false;
+	} else {
+		// prompt 
+	}
 }
 
 function chooseWord () {
@@ -47,9 +69,9 @@ function getRandom() {
 
 // I don't want a string, this doesn't work ... myId = "" + myDate + myRandom;
 myId = Number(myDate + myRandom);
-// console.log(myId);
+console.log(myId);
 
-var params = { TableName:table, Item:{ "ID": myId, "WORD": newWord}};
+var params = { TableName:table, Item:{ "ID": myId, "WORD": newWord, "TEST": 'testing more', "decimal": 88348955721583}};
 console.log("Adding a new item to WordList table");
 
 docClient.put(params, function(err, data) {
